@@ -2,7 +2,8 @@
   (:use compojure.core
         [ring.adapter.jetty :only [run-jetty]])
   (:require [compojure.handler :as handler]
-            [box-namer.api :as api]))
+            [box-namer.api :as api]
+            [box-namer.naming :as naming]))
 
 (defroutes all-routes
   (GET "/hello" []
@@ -10,7 +11,7 @@
         :header {"Content-Type" "text/plain"}
         :body "Hello"})
 
-  (context "/api/v1" [] api/api-routes))
+  (context "/api/v1" [] api/api))
 
 (def app
   (-> all-routes

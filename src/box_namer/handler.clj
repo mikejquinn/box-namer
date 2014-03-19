@@ -1,23 +1,25 @@
 (ns box-namer.handler
   (:use compojure.core
-        [ring.adapter.jetty :only [run-jetty]])
+        [ring.adapter.jetty :only [run-jetty]]
+        [clojure.tools.logging :only [info]])
   (:require [compojure.handler :as handler]
             [box-namer.api :as api]
-            [box-namer.naming :as naming]))
+            [box-namer.naming :as naming]
+            [box-namer.persistence :as persistence]))
 
 (defroutes all-routes
-  (GET "/hello" []
-       {:status 200
-        :header {"Content-Type" "text/plain"}
-        :body "Hello"})
-
   (context "/api/v1" [] api/api))
 
 (def app
   (-> all-routes
       identity))
 
-(def init[])
+(defn init []
+  (.addShutdownHook (Runtime/getRuntime)
+                    (Thread. (fn []
+                               (info "Shutting down...")
+                               (persistence/shutdown-persistence)
+                               (shutdown-agents)))))
 
 (defn -main
   "Starts a Jetty webserver to serve our Ring app."

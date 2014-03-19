@@ -1,9 +1,15 @@
 (ns box-namer.naming
-  (:use [clojure.core.incubator :only [dissoc-in]]))
+  (:use [clojure.core.incubator :only [dissoc-in]]
+        [clojure.string :only [trim]]
+        [clojure.tools.logging :only [info debug]])
+  (:require [box-namer.file-utils :as file-utils]
+            [box-namer.persistence :as persistence]))
 
 ; A map of "basename" => #{set of registered indicies"}
 ; We use an atom to manage concurrent access.
-(def ^:private name-buckets (atom {}))
+(def ^:private name-buckets (atom (persistence/load-stored-names)))
+
+(persistence/start-persistence name-buckets)
 
 (defn- find-lowest-missing-integer
   "Returns the lowest positive integer within a set.
@@ -31,6 +37,9 @@
                                     (dissoc-in buckets [basename])
                                     (assoc-in buckets [basename] new-bucket))))
                             buckets))))
+    (when @found-name
+      (debug "Deregistered name:" (format "%s%d" basename index))
+      (persistence/mark-bucket-as-dirty basename))
     @found-name))
 
 (defn register-next-index-for-basename
@@ -48,4 +57,6 @@
                               (swap! next-int (fn [i] (find-lowest-missing-integer bucket)))
                               (assoc-in buckets [basename] (conj bucket @next-int)))
                             (assoc-in buckets [basename] #{1}))))
+    (persistence/mark-bucket-as-dirty basename)
+    (debug "Registering name:" (format "%s%d" basename @next-int))
     @next-int))

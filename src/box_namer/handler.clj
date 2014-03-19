@@ -7,11 +7,6 @@
             [box-namer.persistence :as persistence]))
 
 (defroutes all-routes
-  (GET "/hello" []
-       {:status 200
-        :header {"Content-Type" "text/plain"}
-        :body "Hello"})
-
   (context "/api/v1" [] api/api))
 
 (def app

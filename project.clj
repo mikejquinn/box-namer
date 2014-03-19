@@ -8,6 +8,9 @@
                  [compojure "1.1.6"]
                  [ring/ring-json "0.3.0"]
                  [org.clojure/core.incubator "0.1.3"]
+                 [ring/ring-jetty-adapter "1.2.0"]
                  [overtone/at-at "1.2.0"]]
   :plugins [[lein-ring "0.8.10"]]
-  :ring {:handler box-namer.handler/app})
+  :ring {:handler box-namer.handler/app
+         :init box-namer.handler/init
+         :port 3000})

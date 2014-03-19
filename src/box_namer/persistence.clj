@@ -25,6 +25,8 @@
 (def ^:private db-directory
   (file-utils/get-writable-directory-at-path (or (System/getenv "BOX_NAMER_DB_DIR") "./db")))
 
+; Stores the thread responsible for flushing data in the background so that we can join it on shutdown
+(def ^:private flushing-thread (atom nil))
 
 (defn- queue-sequence
   "Returns a lazily evaluated sequence of items from the blocking write queue so that we can operate
@@ -62,16 +64,15 @@
         ; Delete the file if the bucket is now empty so it isn't picked up if we reload
         (file-utils/delete-file-in-directory db-directory bucket-name)))))
 
-(defn start-persistence
-  "Starts background threads for flushing all changes to disk."
+(defn- build-flush-thread-action
   [name-buckets-atom]
-  (reset! writing-data? true)
-  (future
+  (fn []
     (let [write-queue-future (process-write-queue name-buckets-atom)]
       (while @writing-data?
         (Thread/sleep flush-frequency)
-        ; Every few seconds, we enqueue all of the dirty name buckets to be flushed to disk. This will
-        ; protect us from writing the same file many times immediatly after a burst of naming changes.
+        ; Every few seconds, we enqueue all of the dirty name buckets to be flushed to disk.
+        ; This will protect us from writing the same file many times immediatly after a burst
+        ; of naming changes.
         (locking dirty-bucket-names
           (doseq [bucket-name @dirty-bucket-names]
             (.put write-queue bucket-name))
@@ -81,9 +82,19 @@
       (.put write-queue shutdown-token)
       @write-queue-future)))
 
-(defn stop-persistence
+(defn start-persistence
+  "Starts background threads for flushing all changes to disk."
+  [name-buckets-atom]
+  (reset! writing-data? true)
+  (reset! flushing-thread (Thread. (build-flush-thread-action name-buckets-atom)))
+  (.start @flushing-thread))
+
+(defn shutdown-persistence
+  "Shuts down the background threads responsible for flushing the DB to disk. Blocks until threads are
+  finished."
   []
-  (reset! writing-data? false))
+  (reset! writing-data? false)
+  (.join @flushing-thread))
 
 (defn mark-bucket-as-dirty
   "Marks a bucket name as changed so that the changes are eventually flushed to disk."

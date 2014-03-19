@@ -3,7 +3,8 @@
         [ring.adapter.jetty :only [run-jetty]])
   (:require [compojure.handler :as handler]
             [box-namer.api :as api]
-            [box-namer.naming :as naming]))
+            [box-namer.naming :as naming]
+            [box-namer.persistence :as persistence]))
 
 (defroutes all-routes
   (GET "/hello" []
@@ -17,7 +18,12 @@
   (-> all-routes
       identity))
 
-(def init[])
+(defn init []
+  (.addShutdownHook (Runtime/getRuntime)
+                    (Thread. (fn []
+                               (println "Shutting down...")
+                               (persistence/shutdown-persistence)
+                               (shutdown-agents)))))
 
 (defn -main
   "Starts a Jetty webserver to serve our Ring app."

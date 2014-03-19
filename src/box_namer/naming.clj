@@ -7,9 +7,7 @@
 
 ; A map of "basename" => #{set of registered indicies"}
 ; We use an atom to manage concurrent access.
-(def ^:private name-buckets (atom (persistence/load-stored-names)))
-
-(persistence/start-persistence name-buckets)
+(def name-buckets (atom (persistence/load-stored-names)))
 
 (defn- find-lowest-missing-integer
   "Returns the lowest positive integer within a set.

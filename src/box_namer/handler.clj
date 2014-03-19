@@ -1,4 +1,5 @@
 (ns box-namer.handler
+  (:gen-class)
   (:use compojure.core
         net.cgrand.enlive-html
         [ring.adapter.jetty :only [run-jetty]]
@@ -39,6 +40,8 @@
       identity))
 
 (defn init []
+  (persistence/start-persistence naming/name-buckets)
+
   ; Reload resources folder whenever they change in development
   (when-not (= (System/getenv "RING_ENV") "production")
     (watcher/watcher ["resources"]

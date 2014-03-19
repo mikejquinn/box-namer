@@ -20,6 +20,9 @@
       (recur (+ i 1))
       i)))
 
+(defn get-current-names []
+  @name-buckets)
+
 (defn deregister-name-for-basename
   "Deregisters a previously registered index for a particular basename.  If no more indicies are
   registered for a particular basename, that basename is removed from the global map.

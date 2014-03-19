@@ -4,8 +4,8 @@
   (:require [box-namer.file-utils :as file-utils])
   (:import java.util.concurrent.LinkedBlockingQueue))
 
-; The frequency at which we check for dirty buckets are enqueue them to be written to disk
-(def ^:private flush-frequency 1000)
+; The frequency at which we check for dirty buckets and enqueue them to be written to disk
+(def ^:private flush-frequency 5000)
 
 ; Dirty buckets are placed into this queue to be written to disk
 (def ^:private write-queue (new LinkedBlockingQueue))

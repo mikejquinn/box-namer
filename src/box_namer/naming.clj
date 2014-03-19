@@ -1,6 +1,7 @@
 (ns box-namer.naming
   (:use [clojure.core.incubator :only [dissoc-in]]
-        [clojure.string :only [trim]])
+        [clojure.string :only [trim]]
+        [clojure.tools.logging :only [info debug]])
   (:require [box-namer.file-utils :as file-utils]
             [box-namer.persistence :as persistence]))
 
@@ -37,6 +38,7 @@
                                     (assoc-in buckets [basename] new-bucket))))
                             buckets))))
     (when @found-name
+      (debug "Deregistered name:" (format "%s%d" basename index))
       (persistence/mark-bucket-as-dirty basename))
     @found-name))
 
@@ -56,4 +58,5 @@
                               (assoc-in buckets [basename] (conj bucket @next-int)))
                             (assoc-in buckets [basename] #{1}))))
     (persistence/mark-bucket-as-dirty basename)
+    (debug "Registering name:" (format "%s%d" basename @next-int))
     @next-int))

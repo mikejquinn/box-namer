@@ -1,6 +1,7 @@
 (ns box-namer.handler
   (:use compojure.core
-        [ring.adapter.jetty :only [run-jetty]])
+        [ring.adapter.jetty :only [run-jetty]]
+        [clojure.tools.logging :only [info]])
   (:require [compojure.handler :as handler]
             [box-namer.api :as api]
             [box-namer.naming :as naming]
@@ -16,7 +17,7 @@
 (defn init []
   (.addShutdownHook (Runtime/getRuntime)
                     (Thread. (fn []
-                               (println "Shutting down...")
+                               (info "Shutting down...")
                                (persistence/shutdown-persistence)
                                (shutdown-agents)))))
 

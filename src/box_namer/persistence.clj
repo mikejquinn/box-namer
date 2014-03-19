@@ -1,5 +1,6 @@
 (ns box-namer.persistence
-  (:use [clojure.java.io :only [reader]])
+  (:use [clojure.java.io :only [reader]]
+        [clojure.tools.logging :only [info debug trace]])
   (:require [box-namer.file-utils :as file-utils])
   (:import java.util.concurrent.LinkedBlockingQueue))
 
@@ -49,6 +50,7 @@
 (defn- write-set-at-path
   "Atomically writes each integer in a set to a file."
   [directory filename s]
+  (debug "Writing file" filename)
   (letfn [(write-set [print-writer]
             (doseq [item s]
               (.println print-writer item)))]
@@ -69,16 +71,18 @@
   (fn []
     (let [write-queue-future (process-write-queue name-buckets-atom)]
       (while @writing-data?
+        (trace "Data flush thread sleeping")
         (Thread/sleep flush-frequency)
         ; Every few seconds, we enqueue all of the dirty name buckets to be flushed to disk.
         ; This will protect us from writing the same file many times immediatly after a burst
         ; of naming changes.
         (locking dirty-bucket-names
           (doseq [bucket-name @dirty-bucket-names]
+            (debug "Queueing bucket" bucket-name "to be written to disk")
             (.put write-queue bucket-name))
           (reset! dirty-bucket-names #{})))
       ; The consumer thread for the blocking queue will exit once it receives this token
-      (println "Writing shutdown token")
+      (debug "Writing shutdown token")
       (.put write-queue shutdown-token)
       @write-queue-future)))
 
@@ -108,9 +112,10 @@
   "Loads all boxname sets from files in the database directory. Returns a map of basenames to
   sets of used indicies (e.g. basename => #{1 2 4 6 20}"
   []
+  (info "Loading database names")
   (reduce (fn [name-map file]
             (let [bucket-name (file-utils/strip-file-extension (.getName file))]
-              (println "Reading names for" bucket-name)
+              (debug "Reading names for" bucket-name)
               (assoc name-map bucket-name (read-set-from-file-at-path (.getAbsolutePath file)))))
           {}
           (file-utils/find-files-with-extension-in-directory db-directory file-extension)))

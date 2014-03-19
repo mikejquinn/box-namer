@@ -15,6 +15,9 @@
       identity))
 
 (defn init []
+  ; Note that this shutdown hook will *not* be called when running via "lein run". This wouldn't affect
+  ; us in production. See:
+  ; http://stackoverflow.com/questions/10855559/shutdown-hook-doesnt-fire-when-running-with-lein-run
   (.addShutdownHook (Runtime/getRuntime)
                     (Thread. (fn []
                                (info "Shutting down...")

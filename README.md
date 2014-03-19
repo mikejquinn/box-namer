@@ -2,7 +2,7 @@
 
 Box Namer is a small application designed to keep track of hostnames of machines in server clusters.
 
-Assigned hostnames take the form "<service><integer>" (e.g. `api34`). Your new machine can request
+Assigned hostnames take the form "_service_|_integer_" (e.g. `api34`). Your new machine can request
 its name on startup by passing a service name to Box Namer's REST API. Box Namer will assign the box a name
 by appending the lowest possible unused positive integer for the service to the service name.
 
@@ -19,27 +19,27 @@ If we register for a new name for the `api` service, Box Namer will reserve the 
 
 All API routes currently expect JSON bodies with a content-type header of "application/json".
 
-Errors should be returned as a JSON object:
+Errors will be returned as a JSON object:
 
     400 BAD REQUEST
 
     { "message": "Missing field 'basename'" }
 
-### Registering a new name
+#### Registering a New Name
 
-   GET /api/v1/hostnames
+    GET /api/v1/hostnames
 
 Params: `basename`:  Required. An integer will be concatenated onto the basename to form the hostname.
 
 Example response:
 
-   {
-       "name": "api34"
-       "basename": "api"
-       "index": 34
-   }
+    {
+      "name": "api34"
+      "basename": "api"
+      "index": 34
+    }
 
-### Deregistering a name
+#### Deregistering a Name
 
     DELETE /api/v1/hostnames/api34
 

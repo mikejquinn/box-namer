@@ -1,45 +1,14 @@
 (ns box-namer.naming
   (:use [clojure.core.incubator :only [dissoc-in]]
-        [clojure.string :only [trim]]
-        [clojure.java.io :only [reader writer]])
-  (:require [overtone.at-at :as at-at]
-            [box-namer.file-utils :as file-utils]))
+        [clojure.string :only [trim]])
+  (:require [box-namer.file-utils :as file-utils]
+            [box-namer.persistence :as persistence]))
 
 ; A map of "basename" => #{set of registered indicies"}
 ; We use an atom to manage concurrent access.
-(def ^:private name-buckets (atom {}))
+(def ^:private name-buckets (atom (persistence/load-stored-names)))
 
-; An array of buckets which need to be flushed to the filesystem
-(def ^:private dirty-buckets (atom []))
-
-; The frequency at which dirty buckets are checked and flushed to disk
-(def ^:private flush-frequency 5000)
-
-; A thread pool used to flush buckets to disk in the background
-(def ^:private at-at-pool (at-at/mk-pool))
-
-(def ^:private db-directory
-  (file-utils/get-writable-directory-at-path (or (System/getenv "BOX_NAMER_DB_DIR") "./db")))
-
-(defn read-set-from-file-at-path
-  [path]
-  (with-open [rdr (reader path)]
-    (->> (map (fn [i] (Integer/parseInt i)) (line-seq rdr))
-         (reduce #(conj %1 %2) #{}))))
-
-(defn write-set-at-path
-  [directory filename s]
-  (letfn [(write-set [print-writer]
-            (doseq [item s]
-              (.println print-writer item)))]
-    (file-utils/write-file-atomically directory filename write-set)))
-
-(defn- flush-buckets-to-disk
-  [directory])
-
-(defn- mark-bucket-as-dirty
-  [bucket]
-  (swap! dirty-buckets (fn [buckets] (conj buckets bucket))))
+(persistence/start-persistence name-buckets)
 
 (defn- find-lowest-missing-integer
   "Returns the lowest positive integer within a set.
@@ -67,6 +36,8 @@
                                     (dissoc-in buckets [basename])
                                     (assoc-in buckets [basename] new-bucket))))
                             buckets))))
+    (when @found-name
+      (persistence/mark-bucket-as-dirty basename))
     @found-name))
 
 (defn register-next-index-for-basename
@@ -84,4 +55,5 @@
                               (swap! next-int (fn [i] (find-lowest-missing-integer bucket)))
                               (assoc-in buckets [basename] (conj bucket @next-int)))
                             (assoc-in buckets [basename] #{1}))))
+    (persistence/mark-bucket-as-dirty basename)
     @next-int))

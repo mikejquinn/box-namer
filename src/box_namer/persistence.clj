@@ -112,7 +112,7 @@
   "Loads all boxname sets from files in the database directory. Returns a map of basenames to
   sets of used indicies (e.g. basename => #{1 2 4 6 20}"
   []
-  (info "Loading database names")
+  (info "Loading database in directory:" (.toString db-directory))
   (reduce (fn [name-map file]
             (let [bucket-name (file-utils/strip-file-extension (.getName file))]
               (debug "Reading names for" bucket-name)
